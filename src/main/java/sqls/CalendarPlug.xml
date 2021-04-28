@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="CalPlug">
+
+<!-- 리스트 출력 -->
+<select id="getCalendarPlugList" parameterType="bit.com.a.dto.CalendarPlugDto"
+	resultType="bit.com.a.dto.CalendarPlugDto">
+	SELECT SEQ, ID, SLEVEL, TITLE, CONTENT, STARTDATE, ENDDATE, WDATE
+	FROM CALENDARPLUG
+	WHERE ID=#{id}
+</select>
+
+
+<!-- 글쓰기 -->
+<insert id="writeCalAf" parameterType="bit.com.a.dto.CalendarPlugDto">
+	INSERT INTO CALENDARPLUG (SEQ, ID, SLEVEL, TITLE, CONTENT, STARTDATE, ENDDATE, WDATE)
+	VALUES (SEQ_CALPLUG.NEXTVAL, #{id}, ${slevel}, #{title}, #{content}, #{startdate}, #{enddate}, SYSDATE )
+</insert>
+
+
+<!-- 수정 -->
+<update id="updateCal" parameterType="bit.com.a.dto.CalendarPlugDto">
+	UPDATE CALENDARPLUG 
+	SET SLEVEL=${slevel}, TITLE=#{title}, CONTENT=#{content}, 
+		STARTDATE=#{startdate}, ENDDATE=#{enddate}, WDATE=SYSDATE
+	WHERE SEQ=${seq}
+</update>
+
+
+<!-- 삭제 -->
+<delete id="delCal" parameterType="Integer">
+	DELETE FROM CALENDARPLUG 
+	WHERE SEQ=${seq}
+</delete>
+
+</mapper>

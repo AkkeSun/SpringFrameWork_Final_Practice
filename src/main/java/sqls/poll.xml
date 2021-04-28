@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="Poll">
+
+<!-- 모든 투표 목록 -->
+<select id="getPollAllList" resultType="bit.com.a.poll.PollDto">
+	SELECT POLLID, ID, QUESTION, SDATE, EDATE, ITEMCOUNT, POLLTOTAL, REGDATE
+	FROM POLL
+	ORDER BY SDATE DESC		
+</select>
+
+<!-- 투표를 했는지 확인 -->
+<select id="isVote" parameterType="bit.com.a.poll.Voter"
+	resultType="java.lang.Integer">
+	SELECT NVL(COUNT(*), 0)
+	FROM VOTER
+	WHERE POLLID=#{pollid} AND ID=#{id}
+</select>
+
+
+
+<!-- 투표 만들기 -->
+<!-- 투표 주제 -->
+<insert id="makePoll" parameterType="bit.com.a.poll.PollDto">
+	INSERT INTO POLL(POLLID, ID, QUESTION, SDATE, EDATE, ITEMCOUNT, POLLTOTAL, REGDATE)
+	VALUES(POLL_SEQ.NEXTVAL, #{id}, #{question}, #{sdate}, #{edate}, #{itemcount}, 0, SYSDATE)
+</insert>
+
+<!-- 투표 보기들 -->
+<insert id="makePollSub" parameterType="bit.com.a.poll.PollSubDto">
+	INSERT INTO POLLSUB(POLLSUBID, POLLID, ANSWER, ACOUNT)
+	VALUES(POLLSUB_SEQ.NEXTVAL, (SELECT NVL(MAX(POLLID), 0) FROM POLL), #{answer}, 0) 
+</insert>
+
+
+
+<!-- 투표정보 취득 -->
+<!-- 질문 -->
+<select id="getPoll" parameterType="bit.com.a.poll.PollDto"
+	resultType="bit.com.a.poll.PollDto">
+	SELECT POLLID, ID, QUESTION, SDATE, EDATE, ITEMCOUNT, POLLTOTAL, REGDATE
+	FROM POLL
+	WHERE POLLID=#{pollid} 
+</select>
+
+<!-- 보기들 -->
+<select id="getPollSubList" parameterType="bit.com.a.poll.PollDto"
+	resultType="bit.com.a.poll.PollSubDto">
+	SELECT POLLSUBID, POLLID, ANSWER, ACOUNT
+	FROM POLLSUB
+	WHERE POLLID=#{pollid}
+</select>
+
+
+
+
+<!-- 투표했을 때 -->
+<!-- 누가? -->
+<insert id="pollingVoter" parameterType="bit.com.a.poll.Voter">
+	INSERT INTO VOTER(VOTERID, POLLID, POLLSUBID, ID, REGDATE)
+	VALUES(VOTER_SEQ.NEXTVAL, #{pollid}, #{pollsubid}, #{id}, SYSDATE)
+</insert>
+
+<!-- 어느 투표에 -->
+<update id="pollingPoll" parameterType="bit.com.a.poll.Voter">
+	UPDATE POLL
+	SET POLLTOTAL=POLLTOTAL+1
+	WHERE POLLID=#{pollid}
+</update>
+
+<!-- 어느 보기를 -->
+<update id="pollingSub" parameterType="bit.com.a.poll.Voter">
+	UPDATE POLLSUB
+	SET ACOUNT=ACOUNT+1
+	WHERE POLLSUBID=#{pollsubid} AND POLLID=#{pollid}
+</update>
+
+
+</mapper>
+
+
+
+
+
+
+
+
+

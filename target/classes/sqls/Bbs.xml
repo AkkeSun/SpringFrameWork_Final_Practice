@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="Bbs">
+<!-- 테스트
+<select id="bbslist" resultType="bit.com.a.dto.BbsDto">
+	SELECT *
+	FROM BBS
+	ORDER BY REF DESC, STEP ASC
+</select>
+-->
+
+
+
+<!-- 출력되는 리스트 얻어오기-->
+ <select id="bbslist" parameterType="bit.com.a.dto.BbsParam" 
+	resultType="bit.com.a.dto.BbsDto">
+	SELECT SEQ, ID, REF, STEP, DEPTH, TITLE, CONTENT, WDATE, DEL, READCOUNT
+	FROM (SELECT ROW_NUMBER()OVER(ORDER BY REF DESC, STEP ASC) AS RNUM,
+			SEQ, ID, REF, STEP, DEPTH, TITLE, CONTENT, WDATE, DEL, READCOUNT
+		  FROM BBS
+		  WHERE 1=1
+		  <!--if test안의 변수는 parameterType의 변수명만 써주면 접근가능-->		  
+		  <if test="choice != null and choice != ''
+		  		and search != null and search != ''">
+		  	  AND DEL=0		
+			  <if test="choice == 'title'">
+			  		AND TITLE LIKE '%'||#{search}||'%'		  
+			  </if>
+			  <if test="choice == 'content'">
+			  		AND CONTENT LIKE '%'||#{search}||'%'			  
+			  </if>
+			  <if test="choice == 'writer'">
+			  		AND ID=#{search}  
+			  </if>	
+		  </if>
+		ORDER BY REF DESC, STEP ASC)
+	WHERE RNUM BETWEEN ${start} AND ${end}	
+</select>  
+ 
+<!-- 글의 총수 --> 
+<select id="getBbsCount" parameterType="bit.com.a.dto.BbsParam"
+	resultType="java.lang.Integer">
+	SELECT NVL(COUNT(*), 0)
+	FROM BBS
+	WHERE 1=1
+	<if test="choice != null and choice != ''
+	  		and search != null and search != ''">	  	  		
+		  <if test="choice == 'title'">
+		  		AND TITLE LIKE '%'||#{search}||'%'		  
+		  </if>
+		  <if test="choice == 'content'">
+		  		AND CONTENT LIKE '%'||#{search}||'%'			  
+		  </if>
+		  <if test="choice == 'writer'">
+		  		AND ID=#{search}  
+		  </if>	
+	  </if>
+</select> 
+ 
+ 
+<!-- 글쓰기 -->
+<insert id="writeBbs" parameterType="bit.com.a.dto.BbsDto">		
+		INSERT INTO BBS (SEQ, ID, REF, STEP, DEPTH, TITLE, CONTENT, WDATE, DEL, READCOUNT) 
+		VALUES( SEQ_BBS.NEXTVAL, #{id}, (SELECT NVL(MAX(REF), 0)+1 FROM BBS), 0, 0, 
+			   #{title}, #{content}, SYSDATE, 0, 0)  
+</insert> 
+
+
+<!-- 디테일 뷰 -->
+<select id="bbsDetail" parameterType="java.lang.Integer" 
+		resultType="bit.com.a.dto.BbsDto">
+		SELECT SEQ, ID, REF, STEP, DEPTH, TITLE, CONTENT, WDATE, DEL, READCOUNT 
+		FROM BBS
+		WHERE SEQ=${seq}
+</select>
+
+
+ <!-- 조회수 올리기  -->
+ <select id="countUp" parameterType="java.lang.Integer">
+		UPDATE BBS
+		SET READCOUNT=READCOUNT+1
+		WHERE SEQ=${seq}
+</select>
+
+
+ <!-- 글 수정  -->
+ <update id="BbsUpdate" parameterType="bit.com.a.dto.BbsDto">
+		UPDATE BBS
+		SET TITLE=#{title}, CONTENT=#{content}
+		WHERE SEQ=${seq}
+</update>
+
+
+
+<!-- 글 삭제 -->
+ <update id="bbsDelete" parameterType="java.lang.Integer">
+		UPDATE FROM BBS
+		SET DEL=1
+		WHERE SEQ=${seq}
+</update>
+
+
+
+<!-- 댓글달기(재정렬) -->
+ <update id="answerUpdate" parameterType="java.lang.Integer">
+		UPDATE BBS
+		SET STEP=STEP+1
+		WHERE REF=(SELECT REF FROM BBS WHERE SEQ=${seq})        <!-- 부모글의 seq와 같은 ref를 가진 것만 -->
+			  AND STEP>(SELECT STEP FROM BBS WHERE SEQ=${seq})	<!-- 부모클의 Step보다 큰 것만 올린다 -->
+</update>
+
+<!-- 댓글달기 (입력) -->
+ <update id="answerInsert" parameterType="bit.com.a.dto.BbsDto">
+		INSERT INTO BBS (SEQ, ID, REF, STEP, DEPTH, TITLE, CONTENT, WDATE, DEL, READCOUNT) 
+		VALUES(SEQ_BBS.NEXTVAL, #{id}, 
+ 				(SELECT REF FROM BBS WHERE SEQ=${seq}), 	  <!--  REF 그룹번호 -->
+				(SELECT STEP FROM BBS WHERE SEQ=${seq}) + 1,  <!--  STEP 정렬값 -->
+				(SELECT DEPTH FROM BBS WHERE SEQ=${seq})+ 1,  <!--  DEPTH --> 
+				#{title}, #{content}, SYSDATE, 0, 0)     
+</update>
+</mapper>  

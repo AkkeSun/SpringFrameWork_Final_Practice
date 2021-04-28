@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="Pds">
+
+<!-- 
+<select id="getPdslist" resultType="bit.com.a.dto.PdsDto">
+	SELECT SEQ, ID, TITLE, CONTENT, FILENAME, NEWFILENAME,
+		   READCOUNT, DOWNCOUNT, REGDATE
+  	FROM PDS
+  	ORDER BY SEQ DESC
+</select>  
+-->
+
+<!-- 출력용 리스트 뽑기 -->
+<select id="getPdslist" parameterType="bit.com.a.dto.PdsParam" 
+	resultType="bit.com.a.dto.PdsDto">
+	SELECT SEQ, ID, TITLE, CONTENT, FILENAME, NEWFILENAME,
+		   READCOUNT, DOWNCOUNT, REGDATE
+	FROM (SELECT ROW_NUMBER()OVER(ORDER BY SEQ DESC) AS RNUM,
+				 SEQ, ID, TITLE, CONTENT, FILENAME, NEWFILENAME, READCOUNT, DOWNCOUNT, REGDATE
+		  FROM PDS
+		  WHERE 1=1
+		  <if test="choice != null and choice != ''
+		  		and search != null and search != ''">	
+			  <if test="choice == 'title'">
+			  		AND TITLE LIKE '%'||#{search}||'%'		  
+			  </if>
+			  <if test="choice == 'content'">
+			  		AND CONTENT LIKE '%'||#{search}||'%'			  
+			  </if>
+			  <if test="choice == 'writer'">
+			  		AND ID=#{search}  
+			  </if>	
+		  </if>
+		ORDER BY SEQ DESC)
+	WHERE RNUM BETWEEN ${start} AND ${end}	
+</select>  
+
+
+<!-- 페이징을 위한 글의 총 수 구하기 --> 
+<select id="psdlistCount" parameterType="bit.com.a.dto.PdsParam"
+	resultType="java.lang.Integer">
+	SELECT NVL(COUNT(*), 0)
+	FROM PDS
+	WHERE 1=1
+	<if test="choice != null and choice != ''
+	  		and search != null and search != ''">	  	  		
+		  <if test="choice == 'title'">
+		  		AND TITLE LIKE '%'||#{search}||'%'		  
+		  </if>
+		  <if test="choice == 'content'">
+		  		AND CONTENT LIKE '%'||#{search}||'%'			  
+		  </if>
+		  <if test="choice == 'writer'">
+		  		AND ID=#{search}  
+		  </if>	
+	  </if>
+</select> 
+
+
+
+<!-- 글쓰기 -->
+<insert id="uploadPds" parameterType="bit.com.a.dto.PdsDto">
+	INSERT INTO PDS (SEQ, ID, TITLE, CONTENT, FILENAME, NEWFILENAME,
+		  			 READCOUNT, DOWNCOUNT, REGDATE)	
+	VALUES (SEQ_PDS.NEXTVAL, #{id}, #{title}, #{content}, #{filename}, #{newfilename}, 0, 0, SYSDATE)	  			 
+</insert>
+
+
+<!-- 조회수 올리기 -->
+<update id="readCountUp" parameterType="Integer">
+	UPDATE PDS 
+	SET READCOUNT = READCOUNT+1
+	WHERE SEQ=${seq}
+</update>
+
+
+<!-- 디테일 출력 -->
+<select id="getPdsDetail" parameterType="Integer" resultType="bit.com.a.dto.PdsDto">
+	SELECT SEQ, ID, TITLE, CONTENT, FILENAME, NEWFILENAME,
+		   READCOUNT, DOWNCOUNT, REGDATE
+  	FROM PDS
+  	WHERE SEQ=${seq}
+</select>  
+
+
+<!-- 수정 -->
+<update id="updatePds" parameterType="bit.com.a.dto.PdsDto">
+	UPDATE PDS 
+	SET title=#{title}, CONTENT=#{content}, FILENAME=#{filename}, NEWFILENAME=#{newfilename}
+	WHERE SEQ=${seq}
+</update>
+
+
+<!-- 삭제 -->
+<delete id="pdsdelete" parameterType="Integer">
+	DELETE FROM PDS 
+	WHERE SEQ=${seq}
+</delete>
+
+
+
+
+</mapper>
